@@ -1,9 +1,8 @@
 package com.kafka.kafka_integration.service;
 
+import com.kafka.kafka_integration.model.MessageDto;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.PartitionOffset;
-import org.springframework.kafka.annotation.TopicPartition;
+import org.springframework.kafka.annotation.*;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.*;
 import org.springframework.stereotype.Service;
@@ -42,4 +41,13 @@ public class KafkaConsumerService {
         System.out.println("Timestamp: " + timestamp);
     }
 
+    @KafkaListener(topics = "message", groupId = "group_id")
+    public void listenMessage(ConsumerRecord<String, MessageDto> record) {
+        String key = record.key();
+        MessageDto message = record.value();
+
+        System.out.println("Key: " + key);
+        System.out.println("Mobile Number: " + message.getMobileNumber());
+        System.out.println("Body: " + message.getBody());
+    }
 }

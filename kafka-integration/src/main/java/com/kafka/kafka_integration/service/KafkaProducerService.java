@@ -1,5 +1,6 @@
 package com.kafka.kafka_integration.service;
 
+import com.kafka.kafka_integration.model.MessageDto;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,7 @@ import java.util.List;
 public class KafkaProducerService {
 
     @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     public void sendMessage(String message) {
         kafkaTemplate.send(new ProducerRecord<>("my-topic", 0, "key1", message + " to my-topic partition 0"));
@@ -26,10 +27,16 @@ public class KafkaProducerService {
         for (int i = 0; i < messages.size(); i++) {
             String msg = messages.get(i);
             String key = "key-" + i;
-            ProducerRecord<String, String> record = new ProducerRecord<>("testing", partition, key, msg);
+            ProducerRecord<String, Object> record = new ProducerRecord<>("testing", partition, key, msg);
             record.headers().add(new RecordHeader("source", "rest-api".getBytes(StandardCharsets.UTF_8)));
             kafkaTemplate.send(record);
         }
     }
 
+    public void sendMobileMessage(String key, String senderNumber, String body) {
+        MessageDto message = new MessageDto();
+        message.setBody(body);
+        message.setMobileNumber(senderNumber);
+        kafkaTemplate.send("message",key,message);
+    }
 }

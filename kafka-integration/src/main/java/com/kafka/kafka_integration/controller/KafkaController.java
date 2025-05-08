@@ -26,4 +26,9 @@ public class KafkaController {
         return ResponseEntity.ok("Batch sent");
     }
 
+    @PostMapping("/message/send")
+    public ResponseEntity<String> send(@RequestParam String key,@RequestParam String senderNumber,@RequestParam String body){
+        producerService.sendMobileMessage(key,senderNumber,body);
+        return ResponseEntity.ok("Message send");
+    }
 }
