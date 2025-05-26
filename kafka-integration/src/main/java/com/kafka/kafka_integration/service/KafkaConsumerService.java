@@ -50,4 +50,11 @@ public class KafkaConsumerService {
         System.out.println("Mobile Number: " + message.getMobileNumber());
         System.out.println("Body: " + message.getBody());
     }
+
+    @KafkaListener(topics = "my-topic", groupId = "group_id")
+    public void consume(ConsumerRecord<String, String> record) {
+        System.out.println("Received message: " + record.value() +
+                " from partition: " + record.partition() +
+                ", key: " + record.key());
+    }
 }

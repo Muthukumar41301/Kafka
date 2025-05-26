@@ -2,13 +2,16 @@ package com.kafka.kafka_integration.service;
 
 import com.kafka.kafka_integration.model.MessageDto;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class KafkaProducerService {
@@ -38,5 +41,25 @@ public class KafkaProducerService {
         message.setBody(body);
         message.setMobileNumber(senderNumber);
         kafkaTemplate.send("message",key,message);
+    }
+
+    public void sendMessageToPartition(int partition, String key, Object message) {
+        CompletableFuture<SendResult<String, Object>> future =
+                kafkaTemplate.send("my-topic", partition, key, message);
+
+        future.whenComplete((result, ex) -> {
+            if (ex == null) {
+                RecordMetadata metadata = result.getRecordMetadata();
+                System.out.println("Sent message=[" + message +
+                        "] to partition=[" + metadata.partition() +
+                        "], offset=[" + metadata.offset() + "]");
+            } else {
+                System.err.println("Failed to send message=[" + message + "] due to: " + ex.getMessage());
+            }
+        });
+    }
+
+    public void uploadFile(byte[] fileContent) {
+        kafkaTemplate.send("file",fileContent);
     }
 }
