@@ -1,13 +1,22 @@
 package com.kafka.kafka_integration.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kafka.kafka_integration.model.MessageDto;
+import com.kafka.kafka_integration.model.User;
+import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.*;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.*;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 @Service
+@Log4j2
 public class KafkaConsumerService {
 
     @KafkaListener(
@@ -56,5 +65,27 @@ public class KafkaConsumerService {
         System.out.println("Received message: " + record.value() +
                 " from partition: " + record.partition() +
                 ", key: " + record.key());
+    }
+
+
+    @RetryableTopic(attempts = "4")// 3 topic N-1
+    @KafkaListener(topics = "${topic.name}", groupId = "javatechie-group")
+    public void consumeEvents(User user, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic, @Header(KafkaHeaders.OFFSET) long offset) {
+        try {
+            log.info("Received: {} from {} offset {}", new ObjectMapper().writeValueAsString(user), topic, offset);
+            //validate restricted IP before process the records
+            List<String> restrictedIpList = Stream.of("32.241.244.236", "15.55.49.164", "81.1.95.253", "126.130.43.183").toList();
+            if (restrictedIpList.contains(user.getIpAddress())) {
+                throw new RuntimeException("Invalid IP Address received !");
+            }
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @DltHandler
+    public void listenDLT(User user, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic, @Header(KafkaHeaders.OFFSET) long offset) {
+        log.info("DLT Received : {} , from {} , offset {}",user.getFirstName(),topic,offset);
     }
 }

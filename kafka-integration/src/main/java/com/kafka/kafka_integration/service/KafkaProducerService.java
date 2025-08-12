@@ -1,10 +1,12 @@
 package com.kafka.kafka_integration.service;
 
 import com.kafka.kafka_integration.model.MessageDto;
+import com.kafka.kafka_integration.model.User;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,9 @@ public class KafkaProducerService {
 
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Value("${topic.name}")
+    private String topicName;
 
     public void sendMessage(String message) {
         kafkaTemplate.send(new ProducerRecord<>("my-topic", 0, "key1", message + " to my-topic partition 0"));
@@ -61,5 +66,23 @@ public class KafkaProducerService {
 
     public void uploadFile(byte[] fileContent) {
         kafkaTemplate.send("file",fileContent);
+    }
+
+    public void sendEvents(User user) {
+
+        try {
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topicName, user);
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
+                    System.out.println("Sent message=[" + user.toString() +
+                            "] with offset=[" + result.getRecordMetadata().offset() + "]");
+                } else {
+                    System.out.println("Unable to send message=[" +
+                            user.toString() + "] due to : " + ex.getMessage());
+                }
+            });
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+        }
     }
 }
